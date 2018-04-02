@@ -4,10 +4,8 @@ import com.parmarh.elasticsearch.util.ElasticSearchPartitioner;
 import com.parmarh.elasticsearch.util.EsUtils;
 import com.parmarh.elasticsearch.util.S3Client;
 import com.google.common.base.Supplier;
-import com.google.common.io.Files;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.apache.commons.io.FileUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -19,7 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.net.MalformedURLException;
@@ -38,8 +35,8 @@ public class ESIndexSnapshotJob implements Serializable {
 	private static final String MY_BACKUP_REPO = "my_backup_repo";
 	private static final int TIMEOUT = 10000;
 	protected transient JavaSparkContext sc;
-	protected File tempDir;
 	private String snapshotRepoName;
+	private static String tempDir;
 
 
 	List<String> routes = new ArrayList<>();
@@ -48,8 +45,6 @@ public class ESIndexSnapshotJob implements Serializable {
 
 	public void setUp(int numOfPartitions) throws Exception {
 	    this.numOfPartitions = numOfPartitions;
-		tempDir = Files.createTempDir();
-		tempDir.deleteOnExit();
 		SparkConf sparkConf = new SparkConf();
 		//sparkConf.setMaster("local[*]");
 		//sparkConf.setMaster("spark://10.0.3.15:7077");
@@ -135,8 +130,6 @@ public class ESIndexSnapshotJob implements Serializable {
 
 		pipeline.process(partPairRDD);
 
-		FileUtils.deleteQuietly(tempDir);
-
 		System.out.println("Everything took: " + TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis() - start)
 				+ " secs");
 
@@ -162,9 +155,11 @@ public class ESIndexSnapshotJob implements Serializable {
 
 		String indexType = args[5];
 
-		String snapWorkingBase = "/media/ephemeral0/tmp/bulkload1/";
+		tempDir = args[6];
 
-		String esWorkingBaseDir = "/media/ephemeral0/tmp/esrawdata1/";
+		String snapWorkingBase = "/tmp/bulkload1/";
+
+		String esWorkingBaseDir = "/tmp/esrawdata1/";
 
 		ESIndexSnapshotJob job = new ESIndexSnapshotJob();
 
